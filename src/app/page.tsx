@@ -1,66 +1,45 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from 'next/link';
+import { ScanBarcode, Receipt, PlusCircle, Activity } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="container animate-fade-in">
+      <header className="app-header">
+        <h1>Assistente de Compras</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>Economize tempo e dinheiro.</p>
+      </header>
+
+      <section>
+        <h2>Ações Rápidas</h2>
+        
+        <div className="glass-card">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <Link href="/scan/receipt" className="btn btn-primary">
+              <Receipt size={20} />
+              Ler Cupom Fiscal (QR Code)
+            </Link>
+            
+            <Link href="/scan/product" className="btn btn-secondary">
+              <ScanBarcode size={20} />
+              Ler Produto (Código de Barras)
+            </Link>
+          </div>
+        </div>
+
+        <div className="glass-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3>Sua Lista Atual</h3>
+            <Activity size={24} color="var(--accent-color)" />
+          </div>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+            Você não possui itens na sua lista de compras.
           </p>
+          <Link href="/list" className="btn btn-secondary" style={{ width: 'auto', display: 'inline-flex' }}>
+            <PlusCircle size={20} />
+            Criar Nova Lista
+          </Link>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
