@@ -93,8 +93,9 @@ export async function POST(request: Request) {
     }
 
     // 3. Salvando no Banco de Dados (Drizzle ORM)
-    const lat = -23.55052;
-    const lng = -46.633308;
+    // Coordenadas reais da loja Mix Mateus em Paulista-PE
+    const lat = -7.940989;
+    const lng = -34.856983;
 
     // A. Salva a Loja
     const [existingStore] = await db.select().from(stores).where(eq(stores.document, storeCnpj)).limit(1);
