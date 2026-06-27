@@ -1,7 +1,41 @@
+"use client";
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Camera, Barcode } from 'lucide-react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export default function ProductScanner() {
+  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  useEffect(() => {
+    let scanner: Html5QrcodeScanner | null = null;
+    
+    if (isScanning) {
+      scanner = new Html5QrcodeScanner(
+        "barcode-reader",
+        { fps: 10, qrbox: { width: 250, height: 100 } }, // Formato retangular ideal para código de barras
+        /* verbose= */ false
+      );
+      
+      scanner.render(
+        (decodedText) => {
+          setScanResult(decodedText);
+          scanner?.clear();
+          setIsScanning(false);
+        },
+        (error) => {}
+      );
+    }
+
+    return () => {
+      if (scanner) {
+        scanner.clear().catch(console.error);
+      }
+    };
+  }, [isScanning]);
+
   return (
     <main className="container animate-fade-in" style={{ paddingBottom: '100px' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
@@ -13,43 +47,37 @@ export default function ProductScanner() {
 
       <section>
         <div className="glass-card" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            height: '200px',
-            backgroundColor: '#000',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px solid var(--accent-color-hover)',
-            boxShadow: '0 0 20px rgba(102, 252, 241, 0.2)'
-          }}>
-            {/* Simulate camera feed */}
-            <Barcode size={64} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
-            
-            {/* Scanner line animation */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '2px',
-              backgroundColor: 'var(--accent-color)',
-              boxShadow: '0 0 10px var(--accent-color)',
-              animation: 'scanLine 2s linear infinite'
-            }} />
-          </div>
           
-          <p style={{ marginTop: '1.5rem', color: 'var(--text-secondary)' }}>
-            Centralize o código de barras do produto.
-          </p>
+          {!isScanning && !scanResult && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <Barcode size={64} color="var(--text-secondary)" />
+              </div>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                Centralize o código de barras (EAN) do produto.
+              </p>
+              <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setIsScanning(true)}>
+                <Camera size={20} />
+                Iniciar Câmera
+              </button>
+            </>
+          )}
 
-          <button className="btn btn-primary" style={{ marginTop: '1rem' }}>
-            <Camera size={20} />
-            Iniciar Câmera
-          </button>
+          {isScanning && (
+            <div id="barcode-reader" style={{ width: '100%', borderRadius: '16px', overflow: 'hidden', backgroundColor: 'var(--bg-color-secondary)' }}></div>
+          )}
+
+          {scanResult && (
+            <div style={{ marginTop: '1rem' }}>
+              <h3 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Produto Detectado!</h3>
+              <p style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                EAN: {scanResult}
+              </p>
+              <button className="btn btn-secondary" style={{ marginTop: '1rem' }} onClick={() => setScanResult(null)}>
+                Escanear Novamente
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="glass-card">
@@ -61,14 +89,6 @@ export default function ProductScanner() {
           <button className="btn btn-secondary">Buscar Produto</button>
         </div>
       </section>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes scanLine {
-          0% { top: 0; }
-          50% { top: 100%; }
-          100% { top: 0; }
-        }
-      `}} />
     </main>
   );
 }
