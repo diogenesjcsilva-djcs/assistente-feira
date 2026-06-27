@@ -99,8 +99,11 @@ export async function POST(request: Request) {
       itemsSaved: savedItemsCount 
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro no parser:', error);
-    return NextResponse.json({ error: 'Erro interno ao processar o cupom fiscal.' }, { status: 500 });
+    return NextResponse.json({ 
+      error: `Erro interno: ${error.message || error}`,
+      stack: error.stack
+    }, { status: 500 });
   }
 }
