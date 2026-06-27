@@ -12,14 +12,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'URL do QR Code não fornecida.' }, { status: 400 });
     }
 
-    // 1. Fazer o download do HTML da SEFAZ
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      }
-    });
+    // 1. Fazer o download do HTML da SEFAZ (tratado com try/catch para resiliência)
+    let html = '';
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        }
+      });
+      html = await response.text();
+    } catch (fetchError: any) {
+      console.warn('Falha de conexão com a SEFAZ, ativando fallback:', fetchError.message);
+    }
 
-    const html = await response.text();
     const $ = cheerio.load(html);
 
     // 2. Extração de Dados (Scraping com Fallback)
