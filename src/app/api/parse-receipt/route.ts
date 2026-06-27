@@ -106,11 +106,10 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Erro no parser:', error);
+    const isDbUrlConfigured = !!process.env.DATABASE_URL;
+    const causeMsg = error.cause ? (error.cause.message || error.cause) : 'Nenhuma causa detalhada fornecida';
     return NextResponse.json({ 
-      error: `Erro interno: ${error.message || error}`,
-      cause: error.cause ? (error.cause.message || error.cause) : null,
-      isDbUrlConfigured: !!process.env.DATABASE_URL,
-      stack: error.stack
+      error: `Erro interno: ${error.message || error} | Causa: ${causeMsg} | DB_Configured: ${isDbUrlConfigured}`
     }, { status: 500 });
   }
 }
