@@ -12,45 +12,82 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'URL do QR Code não fornecida.' }, { status: 400 });
     }
 
-    // 1. Fazer o download do HTML da SEFAZ (tratado com try/catch para resiliência)
-    let html = '';
+    // 1. Fazer o download da SEFAZ
+    let responseText = '';
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         }
       });
-      html = await response.text();
+      responseText = await response.text();
     } catch (fetchError: any) {
-      console.warn('Falha de conexão com a SEFAZ, ativando fallback:', fetchError.message);
+      console.warn('Falha de conexão com a SEFAZ:', fetchError.message);
     }
 
-    const $ = cheerio.load(html);
-
-    // 2. Extração de Dados (Scraping com Fallback)
-    let storeName = $('#u20').text().trim() || 'Supermercado Desconhecido (Mock)';
-    let storeCnpj = $('.text').filter((i, el) => $(el).text().includes('CNPJ')).text().replace(/\D/g, '') || '00000000000000';
-    
+    let storeName = '';
+    let storeCnpj = '';
     const extractedProducts: { name: string, barcode: string, price: number }[] = [];
-    
-    // Tentativa genérica
-    $('tr').each((i, row) => {
-      const name = $(row).find('.txtTit').text().trim();
-      const code = $(row).find('.RCod').text().replace(/\D/g, '');
-      const priceText = $(row).find('.RvlUnit').text().replace(',', '.').replace(/[^\d.]/g, '');
-      
-      if (name && priceText) {
-        extractedProducts.push({
-          name,
-          barcode: code || `MOCK-${i}`,
-          price: parseFloat(priceText)
-        });
-      }
-    });
 
-    // Fallback: Se o scraper genérico não achou nada, usamos um mock para garantir a persistência MVP
+    // 2. Detectar se a resposta é XML (Comum na SEFAZ-PE) ou HTML (Outros estados)
+    const isXml = responseText.includes('<nfeProc') || responseText.includes('<infNFe');
+
+    if (isXml) {
+      console.log('Detectado formato XML da SEFAZ-PE. Iniciando extração...');
+      const $ = cheerio.load(responseText, { xmlMode: true });
+
+      storeName = $('emit > xFant').text().trim() || $('emit > xNome').text().trim() || 'Supermercado Desconhecido';
+      storeCnpj = $('emit > CNPJ').text().trim() || '00000000000000';
+
+      $('det').each((i, el) => {
+        const prodNode = $(el).find('prod');
+        const name = prodNode.find('xProd').text().trim();
+        let ean = prodNode.find('cEAN').text().trim();
+        const code = prodNode.find('cProd').text().trim();
+        const priceText = prodNode.find('vUnCom').text().trim();
+
+        // Se o produto não tiver EAN comercial cadastrado (SEM GTIN), usamos o código interno da loja
+        if (!ean || ean === 'SEM GTIN') {
+          ean = code || `INT-${i}`;
+        }
+
+        if (name && priceText) {
+          extractedProducts.push({
+            name,
+            barcode: ean,
+            price: parseFloat(priceText)
+          });
+        }
+      });
+
+    } else if (responseText) {
+      console.log('Detectado formato HTML. Iniciando extração genérica...');
+      const $ = cheerio.load(responseText);
+
+      storeName = $('#u20').text().trim() || 'Supermercado Desconhecido';
+      storeCnpj = $('.text').filter((i, el) => $(el).text().includes('CNPJ')).text().replace(/\D/g, '') || '00000000000000';
+
+      $('tr').each((i, row) => {
+        const name = $(row).find('.txtTit').text().trim();
+        const code = $(row).find('.RCod').text().replace(/\D/g, '');
+        const priceText = $(row).find('.RvlUnit').text().replace(',', '.').replace(/[^\d.]/g, '');
+        
+        if (name && priceText) {
+          extractedProducts.push({
+            name,
+            barcode: code || `MOCK-${i}`,
+            price: parseFloat(priceText)
+          });
+        }
+      });
+    }
+
+    // Fallback de segurança para garantir a execução do MVP mesmo em caso de falha de conexão/bloqueio
     if (extractedProducts.length === 0) {
+      console.log('Nenhum produto extraído do cupom. Ativando fallback mockado...');
       storeName = "Supermercado Mockado (Fallback)";
+      storeCnpj = "00000000000000";
       extractedProducts.push({ name: "Arroz Tipo 1 (Mock)", barcode: "7890000000001", price: 23.50 });
       extractedProducts.push({ name: "Feijão Preto (Mock)", barcode: "7890000000002", price: 8.90 });
     }
@@ -67,7 +104,6 @@ export async function POST(request: Request) {
       const [newStore] = await db.insert(stores).values({
         name: storeName,
         document: storeCnpj,
-        // Sintaxe do PostGIS para inserir coordenada
         location: sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`
       }).returning({ id: stores.id });
       storeId = newStore.id;
