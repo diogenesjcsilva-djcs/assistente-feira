@@ -108,6 +108,8 @@ export async function POST(request: Request) {
     console.error('Erro no parser:', error);
     return NextResponse.json({ 
       error: `Erro interno: ${error.message || error}`,
+      cause: error.cause ? (error.cause.message || error.cause) : null,
+      isDbUrlConfigured: !!process.env.DATABASE_URL,
       stack: error.stack
     }, { status: 500 });
   }
