@@ -4,7 +4,11 @@ import { stores, products, prices } from '@/db/schema';
 import { eq, inArray, and, sql } from 'drizzle-orm';
 
 interface ReqItem {
-  id: number;
+  product: {
+    id: number;
+    name: string;
+    barcode: string;
+  };
   qty: number;
 }
 
