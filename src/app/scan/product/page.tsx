@@ -70,19 +70,19 @@ export default function ProductScanner() {
     setError(null);
     setStatusMsg("Obtendo localização GPS...");
 
-    // 1. Obter GPS
-    let coords: { lat: number, lng: number } | null = null;
+    // 1. Obter GPS (com fallback padrão)
+    let coords = { lat: -7.940989, lng: -34.856983 };
     try {
-      coords = await new Promise((resolve, reject) => {
+      const gpsCoords: any = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
           (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
           (err) => reject(err),
           { timeout: 8000 }
         );
       });
+      coords = gpsCoords;
     } catch (gpsErr) {
       console.warn("GPS falhou, usando fallback de Paulista-PE");
-      coords = { lat: -7.940989, lng: -34.856983 };
     }
 
     setUserCoords(coords);

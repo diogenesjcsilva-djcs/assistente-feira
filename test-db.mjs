@@ -3,12 +3,19 @@ import { neon } from '@neondatabase/serverless';
 const sql = neon("postgresql://neondb_owner:npg_nuJr7ZVGwQF6@ep-crimson-base-atiy7cdp-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require");
 async function run() {
   try {
-    console.log("Testando consulta direta no Neon...");
-    const res = await sql`select "id", "name", "document", "address", "location" from "stores" limit 1`;
-    console.log("Sucesso na consulta!", res);
+    console.log("=== Lendo Lojas no Neon ===");
+    const storesRes = await sql`select * from stores`;
+    console.log(storesRes);
+
+    console.log("\n=== Lendo Produtos no Neon ===");
+    const productsRes = await sql`select * from products`;
+    console.log(productsRes);
+
+    console.log("\n=== Lendo Preços no Neon ===");
+    const pricesRes = await sql`select * from prices`;
+    console.log(pricesRes);
   } catch (err) {
-    console.error("Erro exato da consulta:", err.message || err);
-    if (err.stack) console.error(err.stack);
+    console.error("Erro:", err.message || err);
   }
 }
 run();
