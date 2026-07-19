@@ -99,7 +99,7 @@ export default function CartPDV() {
       });
       coords = gpsCoords;
     } catch (err) {
-      console.warn("GPS falhou, usando Paulista-PE.");
+      console.warn("GPS falhou, usando fallback de Paulista-PE.");
       setGpsError("GPS não disponível. Exibindo lojas em Paulista-PE.");
     }
 
@@ -289,7 +289,7 @@ export default function CartPDV() {
   const totalCartValue = cartItems.reduce((acc, item) => acc + item.subtotal, 0);
 
   return (
-    <main className="container animate-fade-in" style={{ paddingBottom: '120px' }}>
+    <main className="container animate-fade-in" style={{ paddingBottom: '180px' }}>
       <header className="app-header" style={{ paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Carrinho / PDV</h2>
         {store && (
@@ -366,13 +366,23 @@ export default function CartPDV() {
       {store && (
         <section>
           {/* Loja Atual */}
-          <div className="glass-card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem', borderColor: 'rgba(102, 252, 241, 0.2)' }}>
+          <div className="glass-card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem', borderColor: 'rgba(102, 252, 241, 0.2)' }}>
             <ShoppingBag size={20} color="var(--accent-color)" />
-            <div>
+            <div style={{ flex: 1 }}>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>Estabelecimento Atual</p>
               <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{store.name}</h4>
             </div>
           </div>
+
+          {/* Botão de Adição Reposicionado no Topo */}
+          <button 
+            onClick={() => setShowAddModal(true)} 
+            className="btn btn-primary" 
+            style={{ marginBottom: '1.5rem', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', zIndex: 1 }}
+          >
+            <Barcode size={20} />
+            Bipar / Adicionar Item
+          </button>
 
           {/* Carrinho Vazio */}
           {cartItems.length === 0 ? (
@@ -380,14 +390,14 @@ export default function CartPDV() {
               <ShoppingBag size={48} color="var(--text-secondary)" style={{ margin: '0 auto 1.5rem', opacity: 0.5 }} />
               <h3>Carrinho Vazio</h3>
               <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                Clique no botão de adicionar abaixo para começar a bipar os produtos no carrinho!
+                Clique no botão acima para começar a bipar e somar seus itens!
               </p>
             </div>
           ) : (
-            /* Lista de Itens no Carrinho */
+            /* Lista de Itens no Carrinho (Responsiva para Mobile) */
             <div className="glass-card" style={{ padding: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Itens do Carrinho</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Itens no Carrinho</span>
                 <button onClick={handleClearCart} style={{ background: 'transparent', border: 'none', color: '#ff4b4b', cursor: 'pointer', fontSize: '0.85rem' }}>
                   Esvaziar
                 </button>
@@ -395,45 +405,49 @@ export default function CartPDV() {
 
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                 {cartItems.map(item => (
-                  <li key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.8rem' }}>
-                    <div style={{ flex: 1, paddingRight: '1rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '1rem', lineHeight: '1.2' }}>{item.name}</h4>
-                      <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        R$ {item.unitPrice.toFixed(2).replace('.', ',')} / un
-                      </p>
+                  <li key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem' }}>
+                    {/* Linha Superior: Nome do Produto e Remover */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, paddingRight: '0.5rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 500, lineHeight: '1.3', color: '#fff' }}>{item.name}</h4>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>EAN: {item.id}</span>
+                      </div>
+                      <button 
+                        onClick={() => handleRemoveItem(item.id)}
+                        style={{ background: 'transparent', border: 'none', color: '#ff4b4b', cursor: 'pointer', padding: '0.2rem' }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* Linha Inferior: Controles de Quantidade, Preço Unitário e Subtotal */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                       {/* Qtd */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.2rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0.2rem' }}>
                         <button 
                           onClick={() => handleUpdateQty(item.id, item.qty - 1)}
-                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', padding: '0.2rem' }}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', padding: '0.3rem' }}
                         >
                           <Minus size={14} />
                         </button>
-                        <span style={{ fontWeight: 'bold', width: '24px', textAlign: 'center', fontSize: '0.9rem' }}>{item.qty}</span>
+                        <span style={{ fontWeight: 'bold', width: '28px', textAlign: 'center', fontSize: '0.9rem' }}>{item.qty}</span>
                         <button 
                           onClick={() => handleUpdateQty(item.id, item.qty + 1)}
-                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', padding: '0.2rem' }}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', padding: '0.3rem' }}
                         >
                           <Plus size={14} />
                         </button>
                       </div>
 
-                      {/* Subtotal */}
-                      <div style={{ minWidth: '70px', textAlign: 'right' }}>
-                        <span style={{ fontWeight: 'bold', display: 'block', fontSize: '0.95rem' }}>
+                      {/* Preço Unitário e Totalizador por item */}
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {item.qty} x R$ {item.unitPrice.toFixed(2).replace('.', ',')} =
+                        </span>
+                        <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--accent-color)' }}>
                           R$ {item.subtotal.toFixed(2).replace('.', ',')}
                         </span>
                       </div>
-
-                      <button 
-                        onClick={() => handleRemoveItem(item.id)}
-                        style={{ background: 'transparent', border: 'none', color: '#ff4b4b', cursor: 'pointer', padding: '0.2rem' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   </li>
                 ))}
@@ -441,20 +455,10 @@ export default function CartPDV() {
             </div>
           )}
 
-          {/* Botão de Adição Flutuante/Fixo */}
-          <button 
-            onClick={() => setShowAddModal(true)} 
-            className="btn btn-primary" 
-            style={{ marginTop: '1.5rem', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-          >
-            <Barcode size={20} />
-            Bipar / Adicionar Item
-          </button>
-
           {/* Painel Totalizador Fixo */}
           <div style={{
             position: 'fixed',
-            bottom: '72px', // Acima da Navigation Bar
+            bottom: '72px', 
             left: 0,
             right: 0,
             backgroundColor: 'rgba(23, 37, 42, 0.95)',
