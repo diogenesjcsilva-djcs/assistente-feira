@@ -13,7 +13,17 @@ export async function GET(request: Request) {
     }
 
     // 1. Busca local no Neon
-    const [product] = await db.select().from(products).where(eq(products.barcode, barcode)).limit(1);
+    let [product] = await db.select().from(products).where(eq(products.barcode, barcode)).limit(1);
+
+    // Fallback: se não encontrar e o código tiver 14 ou 13 dígitos começando com '0', tenta buscar sem o zero à esquerda
+    if (!product && (barcode.length === 14 || barcode.length === 13) && barcode.startsWith('0')) {
+      const shortBarcode = barcode.substring(1);
+      console.log(`Tentando buscar código sem zero à esquerda: ${shortBarcode}`);
+      const [shortProduct] = await db.select().from(products).where(eq(products.barcode, shortBarcode)).limit(1);
+      if (shortProduct) {
+        product = shortProduct;
+      }
+    }
 
     if (product) {
       return NextResponse.json({ found: true, source: 'local', product });

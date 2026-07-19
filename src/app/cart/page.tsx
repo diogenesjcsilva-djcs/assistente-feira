@@ -143,8 +143,13 @@ export default function CartPDV() {
       );
       
       scanner.render(
-        (decodedText) => {
-          scanner?.clear();
+        async (decodedText) => {
+          console.log("[Scanner] Código de barras lido:", decodedText);
+          try {
+            await scanner?.clear();
+          } catch (e) {
+            console.warn("[Scanner] Erro ao limpar instância do scanner:", e);
+          }
           setIsScanning(false);
           handleBarcodeDetected(decodedText);
         },
@@ -161,22 +166,33 @@ export default function CartPDV() {
 
   // Executado ao ler ou inserir EAN no modal
   const handleBarcodeDetected = async (ean: string) => {
-    setScannedEan(ean);
+    const cleanEan = ean.trim();
+    console.log("[PDV] Processando EAN detectado:", cleanEan);
+
+    setScannedEan(cleanEan);
     setProcessingBarcode(true);
     setDbError(null);
     setProductName('');
     setProductPrice('');
 
     try {
-      // Consulta produto no banco/OpenFoodFacts
-      const res = await fetch(`/api/products/ean?barcode=${ean}`);
+      const url = `/api/products/ean?barcode=${cleanEan}`;
+      console.log("[PDV] Consultando API:", url);
+      const res = await fetch(url);
       const data = await res.json();
-      if (res.ok && data.found) {
+      console.log("[PDV] Resposta recebida da API de EAN:", data);
+      
+      if (res.ok && data.found && data.product) {
+        console.log("[PDV] Produto encontrado e definido no input:", data.product.name);
         setProductName(data.product.name);
+      } else {
+        console.log("[PDV] Produto não encontrado no banco ou OpenFoodFacts.");
       }
     } catch (err) {
-      console.error(err);
+      console.error("[PDV] Falha na requisição da API de EAN:", err);
+      setDbError("Erro ao buscar dados do produto na base.");
     } finally {
+      console.log("[PDV] Concluindo carregamento da sub-tela.");
       setProcessingBarcode(false);
     }
   };
